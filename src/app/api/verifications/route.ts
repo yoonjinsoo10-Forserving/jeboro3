@@ -7,7 +7,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
 // Edge Runtime 설정 (Cloudflare Workers 호환)
-export const runtime = 'edge';
+
 
 // GET /api/verifications - 인증 요청 목록 조회 (관리자)
 export async function GET() {

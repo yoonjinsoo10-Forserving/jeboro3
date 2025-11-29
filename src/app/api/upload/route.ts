@@ -7,7 +7,7 @@ import { headers } from "next/headers";
 import { getUploadPresignedUrl, generateFileKey, isAllowedImageType } from "@/lib/r2";
 
 // Edge Runtime 설정 (Cloudflare Workers 호환)
-export const runtime = 'edge';
+
 
 // POST /api/upload - 프리사인드 URL 발급
 export async function POST(request: NextRequest) {
