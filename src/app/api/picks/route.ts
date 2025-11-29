@@ -8,7 +8,7 @@ import { headers } from "next/headers";
 import { EMBARGO_HOURS } from "@/lib/constants";
 
 // Edge Runtime 설정 (Cloudflare Workers 호환)
-
+export const runtime = 'edge'
 
 // POST /api/picks - 제보 Pick 하기
 export async function POST(request: NextRequest) {

@@ -7,7 +7,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
 // Edge Runtime 설정 (Cloudflare Workers 호환)
-
+export const runtime = 'edge'
 
 const TOSS_SECRET_KEY = process.env.TOSS_SECRET_KEY;
 const TOSS_API_URL = process.env.TOSS_SANDBOX === "true" 

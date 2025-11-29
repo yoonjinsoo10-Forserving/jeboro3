@@ -7,7 +7,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
 // Edge Runtime 설정 (Cloudflare Workers 호환)
-
+export const runtime = 'edge'
 
 // GET /api/users/me - 현재 사용자 정보 조회
 export async function GET() {
