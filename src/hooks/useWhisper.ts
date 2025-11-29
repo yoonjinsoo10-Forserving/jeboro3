@@ -71,8 +71,9 @@ export function useWhisper(options: UseWhisperOptions = {}): UseWhisperReturn {
         "automatic-speech-recognition",
         "onnx-community/whisper-tiny",
         {
-          progress_callback: (progress: { progress?: number }) => {
-            if (progress.progress) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          progress_callback: (progress: any) => {
+            if (progress && typeof progress.progress === "number") {
               setLoadingProgress(Math.round(progress.progress));
             }
           },
