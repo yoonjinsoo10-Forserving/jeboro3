@@ -1,0 +1,328 @@
+// 제보로(jeboro) 프로젝트 Prisma 스키마
+// 핵심 규칙: 음성 파일 비저장, 엠바고 48시간 등 준수
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 사용자 역할: 제보자, 기자, 관리자
+enum Role {
+  INFORMANT // 제보자
+  REPORTER  // 기자
+  ADMIN     // 관리자
+}
+
+// 제보 상태
+enum Status {
+  PENDING   // 대기중
+  APPROVED  // 승인됨
+  REJECTED  // 거부됨
+}
+
+// 제보 공개 유형
+enum PublishType {
+  OPEN      // 공개 제보
+  EXCLUSIVE // 독점 제보
+}
+
+// 소셜 로그인 제공자 (카카오 > 네이버 > 구글 순서 유지)
+enum AuthProvider {
+  KAKAO
+  NAVER
+  GOOGLE
+}
+
+// 인증 상태
+enum VerifyStatus {
+  PENDING   // 대기중
+  APPROVED  // 승인됨
+  REJECTED  // 거부됨
+}
+
+// 구독 상태
+enum SubscriptionStatus {
+  ACTIVE    // 활성
+  CANCELLED // 취소됨
+  EXPIRED   // 만료됨
+}
+
+// 구독 플랜
+enum SubscriptionPlan {
+  FREE      // 무료 (OPEN만 접근 가능)
+  BASIC     // 기본
+  PREMIUM   // 프리미엄 (EXCLUSIVE 참여 가능)
+}
+
+// 결제 상태
+enum PaymentStatus {
+  PENDING   // 대기중
+  COMPLETED // 완료
+  FAILED    // 실패
+  REFUNDED  // 환불됨
+}
+
+// 결제 유형
+enum PaymentType {
+  SUBSCRIPTION // 구독
+  BOOST        // 부스트 (제보 우선 노출)
+  AI_EDIT      // AI 편집 서비스
+}
+
+// ============================================
+// 사용자 모델
+// ============================================
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?   // 프로필 이미지 URL
+  role          Role      @default(INFORMANT)
+  provider      AuthProvider
+  providerId    String?   // 소셜 로그인 제공자 ID
+  isAnonymous   Boolean   @default(true) // 제보자 익명 여부 (기본 익명)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // 관계
+  reports       Report[]
+  picks         Pick[]
+  verification  Verification?
+  reputation    Reputation?
+  subscriptions Subscription[]
+  payments      Payment[]
+  auditLogs     AuditLog[]     @relation("UserAuditLogs")
+  adminLogs     AuditLog[]     @relation("AdminAuditLogs")
+
+  // 언론사 소속 (기자인 경우)
+  pressId       String?
+  press         Press?    @relation(fields: [pressId], references: [id])
+
+  @@index([email])
+  @@index([role])
+  @@index([provider])
+}
+
+// ============================================
+// 제보 모델 (핵심: 음성 파일 저장 안함, 텍스트만 저장)
+// ============================================
+model Report {
+  id          String      @id @default(cuid())
+  title       String
+  content     String      @db.Text // 음성→텍스트 변환된 내용만 저장
+  publishType PublishType @default(OPEN)
+  status      Status      @default(PENDING)
+  region      String?     // 지역
+  category    String?     // 카테고리
+  isAnonymous Boolean     @default(true) // 익명 제보 여부
+  isBoosted   Boolean     @default(false) // 부스트 (유료 노출) 여부
+  viewCount   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // 엠바고 관련 (EXCLUSIVE 선택 시)
+  embargoEnds DateTime?   // 엠바고 만료 시각 (48시간 후)
+
+  // 관계
+  author      User        @relation(fields: [authorId], references: [id])
+  authorId    String
+  picks       Pick[]
+  rejectReason String?    // 반려 사유
+
+  @@index([status])
+  @@index([publishType])
+  @@index([region])
+  @@index([category])
+  @@index([createdAt])
+}
+
+// ============================================
+// Pick 모델 (기자가 제보 선택)
+// ============================================
+model Pick {
+  id          String   @id @default(cuid())
+  proposal    String?  @db.Text // 기자의 제안서
+  isAccepted  Boolean  @default(false) // 제보자가 수락했는지
+  isCompleted Boolean  @default(false) // 기사화 완료 여부
+  articleUrl  String?  // 기사화된 URL
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 관계
+  reporter    User     @relation(fields: [reporterId], references: [id])
+  reporterId  String
+  report      Report   @relation(fields: [reportId], references: [id])
+  reportId    String
+
+  @@unique([reporterId, reportId])
+  @@index([isCompleted])
+}
+
+// ============================================
+// 기자 인증 모델
+// ============================================
+model Verification {
+  id         String       @id @default(cuid())
+  status     VerifyStatus @default(PENDING)
+  docs       String?      // R2에 저장된 인증 문서 파일 키
+  comment    String?      // 관리자 코멘트
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  // 관계
+  user       User         @relation(fields: [userId], references: [id])
+  userId     String       @unique
+
+  @@index([status])
+}
+
+// ============================================
+// 평판 모델 (기자 평판)
+// ============================================
+model Reputation {
+  id              String    @id @default(cuid())
+  score           Int       @default(0)
+  articlesCount   Int       @default(0)     // 기사화 완료 수
+  acceptanceRate  Float     @default(0.0)   // 수락률
+  responseTime    Float     @default(0.0)   // 평균 응답 시간 (시간)
+  warningCount    Int       @default(0)     // 경고 횟수
+  isBanned        Boolean   @default(false) // 영구 차단 여부
+  lastActiveAt    DateTime?
+  updatedAt       DateTime  @updatedAt
+
+  // 관계
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String    @unique
+}
+
+// ============================================
+// 언론사 모델 (B2B)
+// ============================================
+model Press {
+  id          String    @id @default(cuid())
+  name        String
+  domain      String?   // 언론사 도메인
+  logoUrl     String?
+  isPartner   Boolean   @default(false) // 파트너 여부
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // 관계
+  reporters   User[]
+}
+
+// ============================================
+// 구독 모델 (기자 구독)
+// ============================================
+model Subscription {
+  id          String             @id @default(cuid())
+  plan        SubscriptionPlan   @default(FREE)
+  status      SubscriptionStatus @default(ACTIVE)
+  startDate   DateTime           @default(now())
+  endDate     DateTime?
+  promoCode   String?            // 할인 코드
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  // 관계
+  user        User               @relation(fields: [userId], references: [id])
+  userId      String
+
+  @@index([status])
+  @@index([plan])
+}
+
+// ============================================
+// 결제 모델 (토스페이먼츠)
+// ============================================
+model Payment {
+  id            String        @id @default(cuid())
+  type          PaymentType
+  amount        Int           // 금액 (원)
+  status        PaymentStatus @default(PENDING)
+  orderId       String        @unique // 토스페이먼츠 주문 ID
+  paymentKey    String?       // 토스페이먼츠 결제 키
+  receiptUrl    String?       // 영수증 URL
+  failReason    String?       // 실패 사유
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // 관계
+  user          User          @relation(fields: [userId], references: [id])
+  userId        String
+
+  @@index([status])
+  @@index([orderId])
+}
+
+// ============================================
+// 감사 로그 모델 (관리자 조치 기록)
+// ============================================
+model AuditLog {
+  id          String    @id @default(cuid())
+  action      String    // 조치 내용
+  targetType  String    // 대상 타입 (User, Report, Verification 등)
+  targetId    String    // 대상 ID
+  details     String?   @db.Text // 상세 내용
+  createdAt   DateTime  @default(now())
+
+  // 관계
+  user        User      @relation("UserAuditLogs", fields: [userId], references: [id])
+  userId      String
+  admin       User?     @relation("AdminAuditLogs", fields: [adminId], references: [id])
+  adminId     String?
+
+  @@index([action])
+  @@index([targetType])
+  @@index([createdAt])
+}
+
+// ============================================
+// 프로모션 코드 모델
+// ============================================
+model PromoCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  discount    Int       // 할인율 (%)
+  maxUses     Int       @default(100)
+  usedCount   Int       @default(0)
+  validFrom   DateTime  @default(now())
+  validUntil  DateTime
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  @@index([code])
+  @@index([isActive])
+}
+
+// ============================================
+// 카테고리 모델
+// ============================================
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([slug])
+}
+
+// ============================================
+// 지역 모델
+// ============================================
+model Region {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([slug])
+}
