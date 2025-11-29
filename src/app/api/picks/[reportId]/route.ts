@@ -7,6 +7,9 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { REPUTATION_RULES } from "@/lib/constants";
 
+// Edge Runtime 설정 (Cloudflare Workers 호환)
+export const runtime = 'edge';
+
 // DELETE /api/picks/[reportId] - Pick 삭제
 export async function DELETE(
   request: NextRequest,

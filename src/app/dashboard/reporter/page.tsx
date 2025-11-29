@@ -3,18 +3,17 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Clock, Eye, Lock, Globe, Filter, TrendingUp, CheckCircle } from "lucide-react";
+import { Clock, Eye, Lock, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Header } from "@/components/layout/header";
-import { formatDistanceToNow, differenceInHours } from "date-fns";
-import { ko } from "date-fns/locale";
+import { differenceInHours } from "date-fns";
 import { CATEGORIES, REGIONS } from "@/lib/constants";
 
 interface Report {
@@ -37,18 +36,14 @@ export default function ReporterDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState({ publishType: "all", region: "all", category: "all" });
 
-  useEffect(() => {
-    fetchReports();
-  }, [filter]);
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams({ status: "APPROVED" });
       if (filter.publishType !== "all") params.set("publishType", filter.publishType);
       if (filter.region !== "all") params.set("region", filter.region);
       if (filter.category !== "all") params.set("category", filter.category);
-      
+
       const response = await fetch(`/api/reports?${params}`);
       const data = await response.json();
       if (data.success) setReports(data.data.items);
@@ -57,7 +52,11 @@ export default function ReporterDashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
 
   const getEmbargoStatus = (embargoEnds?: string) => {
     if (!embargoEnds) return null;

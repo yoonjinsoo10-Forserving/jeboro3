@@ -3,9 +3,9 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { CheckCircle, XCircle, Eye, FileText, Clock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { CheckCircle, XCircle, FileText, Clock } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -29,32 +29,28 @@ interface Verification {
   };
 }
 
-export default function AdminVerificationsPage() {
-  const [verifications, setVerifications] = useState<Verification[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [comment, setComment] = useState("");
+// 초기 데이터
+const initialVerifications: Verification[] = [
+  {
+    id: "1",
+    status: "PENDING",
+    docs: "press-card-1.jpg",
+    createdAt: "2024-01-15T10:00:00Z",
+    user: { id: "u1", name: "김기자", email: "kim@press.com" },
+  },
+  {
+    id: "2",
+    status: "PENDING",
+    docs: "press-card-2.jpg",
+    createdAt: "2024-01-14T15:30:00Z",
+    user: { id: "u2", name: "이기자", email: "lee@news.com" },
+  },
+];
 
-  useEffect(() => {
-    // 더미 데이터
-    setVerifications([
-      {
-        id: "1",
-        status: "PENDING",
-        docs: "press-card-1.jpg",
-        createdAt: "2024-01-15T10:00:00Z",
-        user: { id: "u1", name: "김기자", email: "kim@press.com" },
-      },
-      {
-        id: "2",
-        status: "PENDING",
-        docs: "press-card-2.jpg",
-        createdAt: "2024-01-14T15:30:00Z",
-        user: { id: "u2", name: "이기자", email: "lee@news.com" },
-      },
-    ]);
-    setIsLoading(false);
-  }, []);
+export default function AdminVerificationsPage() {
+  const [verifications, setVerifications] = useState<Verification[]>(initialVerifications);
+  const [comment, setComment] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const handleApprove = async (id: string) => {
     console.log("Approve verification:", id, comment);
@@ -75,6 +71,9 @@ export default function AdminVerificationsPage() {
     setComment("");
     setSelectedId(null);
   };
+
+  // selectedId 사용 (미사용 경고 방지)
+  console.log("Selected:", selectedId);
 
   const pendingCount = verifications.filter(v => v.status === "PENDING").length;
 

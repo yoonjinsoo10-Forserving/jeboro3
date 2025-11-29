@@ -6,6 +6,9 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
+// Edge Runtime 설정 (Cloudflare Workers 호환)
+export const runtime = 'edge';
+
 // PUT /api/verifications/[id] - 인증 승인/반려
 export async function PUT(
   request: NextRequest,

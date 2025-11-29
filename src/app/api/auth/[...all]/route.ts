@@ -4,5 +4,8 @@
 import { auth } from '@/lib/auth'
 import { toNextJsHandler } from 'better-auth/next-js'
 
+// Edge Runtime 설정 (Cloudflare Workers 호환)
+export const runtime = 'edge'
+
 export const { GET, POST } = toNextJsHandler(auth)
 

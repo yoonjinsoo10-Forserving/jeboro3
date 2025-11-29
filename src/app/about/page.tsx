@@ -2,7 +2,7 @@
 // 핵심 규칙: 서비스 소개, 핵심 가치 전달
 
 import Link from "next/link";
-import { Mic, Shield, Users, Clock, Target, Heart, Zap } from "lucide-react";
+import { Mic, Shield, Users, Clock, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Header } from "@/components/layout/header";
@@ -51,7 +51,7 @@ export default function AboutPage() {
             <div className="max-w-3xl mx-auto text-center">
               <h2 className="text-3xl font-bold text-gray-900 mb-6">우리의 미션</h2>
               <p className="text-xl text-gray-600 leading-relaxed">
-                "모든 사람의 목소리가 뉴스가 될 수 있는 세상"
+                &quot;모든 사람의 목소리가 뉴스가 될 수 있는 세상&quot;
               </p>
               <p className="mt-6 text-gray-600">
                 복잡한 제보 과정을 음성 한 번으로 해결하고,

@@ -5,11 +5,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { FileText, Users, Shield, AlertTriangle, TrendingUp, Clock, CheckCircle, XCircle } from "lucide-react";
+import { FileText, Shield, AlertTriangle, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { Header } from "@/components/layout/header";
 
@@ -33,28 +33,31 @@ interface PendingReport {
   author: { name: string; email: string } | null;
 }
 
-export default function AdminDashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [pendingReports, setPendingReports] = useState<PendingReport[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+// 초기 데이터
+const initialStats: DashboardStats = {
+  totalReports: 1250,
+  pendingReports: 45,
+  approvedReports: 1100,
+  rejectedReports: 105,
+  totalReporters: 320,
+  pendingVerifications: 12,
+  activeEmbargos: 8,
+  recentAlerts: 3,
+};
 
+const initialPendingReports: PendingReport[] = [
+  { id: "1", title: "지역 상가 임대료 급등 제보", content: "강남구 일대 상가 임대료가...", publishType: "OPEN", createdAt: "2024-01-15T10:30:00Z", author: null },
+  { id: "2", title: "공공기관 비리 제보", content: "모 공공기관에서 발생한...", publishType: "EXCLUSIVE", createdAt: "2024-01-15T09:15:00Z", author: null },
+];
+
+export default function AdminDashboardPage() {
+  const [stats] = useState<DashboardStats>(initialStats);
+  const [pendingReports] = useState<PendingReport[]>(initialPendingReports);
+  const [isLoading] = useState(false);
+
+  // 실제 API 호출 시 useEffect 사용
   useEffect(() => {
-    // 실제로는 API에서 가져옴
-    setStats({
-      totalReports: 1250,
-      pendingReports: 45,
-      approvedReports: 1100,
-      rejectedReports: 105,
-      totalReporters: 320,
-      pendingVerifications: 12,
-      activeEmbargos: 8,
-      recentAlerts: 3,
-    });
-    setPendingReports([
-      { id: "1", title: "지역 상가 임대료 급등 제보", content: "강남구 일대 상가 임대료가...", publishType: "OPEN", createdAt: "2024-01-15T10:30:00Z", author: null },
-      { id: "2", title: "공공기관 비리 제보", content: "모 공공기관에서 발생한...", publishType: "EXCLUSIVE", createdAt: "2024-01-15T09:15:00Z", author: null },
-    ]);
-    setIsLoading(false);
+    // TODO: 실제 API 호출로 교체
   }, []);
 
   const handleApprove = async (id: string) => {

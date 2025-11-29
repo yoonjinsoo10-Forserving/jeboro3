@@ -4,7 +4,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+
 import { Check, Zap, Crown, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { PLAN_FEATURES, BOOST_PRICE, AI_EDIT_PRICE } from "@/lib/constants";
+import { BOOST_PRICE, AI_EDIT_PRICE } from "@/lib/constants";
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false);

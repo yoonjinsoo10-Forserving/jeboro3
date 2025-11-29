@@ -2,9 +2,9 @@
 // 핵심 규칙: 제보자/기자별 단계별 가이드
 
 import Link from "next/link";
-import { BookOpen, Mic, Users, CheckCircle, ArrowRight } from "lucide-react";
+import { BookOpen, Mic, Users, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/layout/header";

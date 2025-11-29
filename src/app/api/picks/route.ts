@@ -7,6 +7,9 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { EMBARGO_HOURS } from "@/lib/constants";
 
+// Edge Runtime 설정 (Cloudflare Workers 호환)
+export const runtime = 'edge';
+
 // POST /api/picks - 제보 Pick 하기
 export async function POST(request: NextRequest) {
   try {
@@ -123,7 +126,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET /api/picks - 내 Pick 목록 조회
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),

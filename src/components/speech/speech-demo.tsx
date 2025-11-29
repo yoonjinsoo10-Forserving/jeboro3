@@ -19,75 +19,78 @@ interface SpeechRecognitionErrorEvent extends Event {
   error: string;
 }
 
+// Web Speech API 지원 여부 확인 (클라이언트 사이드)
+function checkSpeechSupport(): boolean {
+  if (typeof window === "undefined") return true;
+  return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+}
+
 export function SpeechDemo() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [interimTranscript, setInterimTranscript] = useState("");
-  const [isSupported, setIsSupported] = useState(true);
+  const [isSupported] = useState(() => checkSpeechSupport());
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
-    // Web Speech API 지원 확인
-    if (typeof window !== "undefined") {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        setIsSupported(false);
-        return;
+    // Web Speech API 설정
+    if (typeof window === "undefined" || !isSupported) return;
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "ko-KR";
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interimText = "";
+      let finalText = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalText += result[0].transcript;
+        } else {
+          interimText += result[0].transcript;
+        }
       }
 
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = "ko-KR";
+      if (finalText) {
+        setTranscript((prev) => prev + finalText);
+      }
+      setInterimTranscript(interimText);
+    };
 
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interimText = "";
-        let finalText = "";
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.error("Speech recognition error:", event.error);
+      if (event.error === "not-allowed") {
+        setError("마이크 권한이 필요합니다. 브라우저 설정에서 허용해주세요.");
+      } else if (event.error === "no-speech") {
+        setError("음성이 감지되지 않았습니다. 다시 시도해주세요.");
+      } else {
+        setError(`오류가 발생했습니다: ${event.error}`);
+      }
+      setIsListening(false);
+    };
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (result.isFinal) {
-            finalText += result[0].transcript;
-          } else {
-            interimText += result[0].transcript;
-          }
-        }
+    recognition.onend = () => {
+      if (isListening) {
+        recognition.start();
+      }
+    };
 
-        if (finalText) {
-          setTranscript((prev) => prev + finalText);
-        }
-        setInterimTranscript(interimText);
-      };
-
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error("Speech recognition error:", event.error);
-        if (event.error === "not-allowed") {
-          setError("마이크 권한이 필요합니다. 브라우저 설정에서 허용해주세요.");
-        } else if (event.error === "no-speech") {
-          setError("음성이 감지되지 않았습니다. 다시 시도해주세요.");
-        } else {
-          setError(`오류가 발생했습니다: ${event.error}`);
-        }
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        if (isListening) {
-          recognition.start();
-        }
-      };
-
-      recognitionRef.current = recognition;
-    }
+    recognitionRef.current = recognition;
 
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
     };
-  }, [isListening]);
+  }, [isListening, isSupported]);
 
   const toggleListening = useCallback(() => {
     if (!recognitionRef.current) return;
