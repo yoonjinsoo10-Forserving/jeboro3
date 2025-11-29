@@ -13,6 +13,7 @@
     "@aws-sdk/s3-request-presigner": "^3.940.0",
     "@cloudflare/next-on-pages": "^1.13.16",
     "@hookform/resolvers": "^5.2.2",
+    "@huggingface/transformers": "^3.8.0",
     "@neondatabase/serverless": "^0.10.0",
     "@prisma/adapter-neon": "^5.22.0",
     "@prisma/client": "^5.22.0",

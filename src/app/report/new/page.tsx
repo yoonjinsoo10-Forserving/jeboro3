@@ -1,12 +1,13 @@
 // 제보로 프로젝트 - 제보 작성 페이지
 // 핵심 규칙: 음성 파일 서버 전송 금지, 텍스트만 저장
+// Whisper AI 음성 인식 사용 (브라우저에서 직접 처리)
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mic, MicOff, Send, ArrowLeft, Lock, Globe, AlertCircle } from "lucide-react";
+import { Send, ArrowLeft, Lock, Globe, AlertCircle, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,20 +19,11 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { Header } from "@/components/layout/header";
+import { WhisperRecorder } from "@/components/speech/whisper-recorder";
 import { CATEGORIES, REGIONS } from "@/lib/constants";
-
-interface SpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-}
 
 export default function NewReportPage() {
   const router = useRouter();
-  const [isListening, setIsListening] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("");
@@ -40,65 +32,11 @@ export default function NewReportPage() {
   const [isAnonymous, setIsAnonymous] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSupported, setIsSupported] = useState(true);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        setIsSupported(false);
-        return;
-      }
-
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = "ko-KR";
-
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let finalText = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            finalText += event.results[i][0].transcript;
-          }
-        }
-        if (finalText) {
-          setContent((prev) => prev + finalText);
-        }
-      };
-
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        if (event.error === "not-allowed") {
-          setError("마이크 권한이 필요합니다.");
-        }
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        if (isListening) recognition.start();
-      };
-
-      recognitionRef.current = recognition;
-    }
-  }, [isListening]);
-
-  const toggleListening = useCallback(() => {
-    if (!recognitionRef.current) return;
-    setError(null);
-
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
-      try {
-        recognitionRef.current.start();
-        setIsListening(true);
-      } catch {
-        setError("음성 인식을 시작할 수 없습니다.");
-      }
-    }
-  }, [isListening]);
+  // Whisper 음성 인식 결과 처리
+  const handleTranscript = useCallback((text: string) => {
+    setContent((prev) => prev + (prev ? " " : "") + text);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,10 +95,7 @@ export default function NewReportPage() {
               <div className="space-y-2">
                 <Label>내용 *</Label>
                 <div className="flex justify-center mb-4">
-                  <Button type="button" onClick={toggleListening} disabled={!isSupported}
-                    className={`rounded-full w-16 h-16 ${isListening ? "bg-red-500 hover:bg-red-600 animate-pulse" : "bg-linear-to-r from-blue-600 to-indigo-600"}`}>
-                    {isListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
-                  </Button>
+                  <WhisperRecorder onTranscript={handleTranscript} />
                 </div>
                 <Textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="마이크 버튼을 눌러 음성으로 입력하거나 직접 작성하세요" rows={8} required />
               </div>
